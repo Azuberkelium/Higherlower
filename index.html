@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Higher or Lower</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .container {
+            display: none;
+        }
+        .active {
+            display: block;
+        }
+        .number-grid-item {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            border-radius: 0.5rem;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .bingo-item-drawn {
+            background-color: #374151;
+            color: #9ca3af;
+        }
+        .tooltip {
+            position: absolute;
+            bottom: 120%;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+        .has-tooltip:hover .tooltip {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen flex items-center justify-center p-4">
+
+    <div id="game-container" class="w-full max-w-4xl bg-gray-800 rounded-xl p-8 shadow-2xl">
+
+        <!-- Main Menu -->
+        <div id="main-menu" class="container active text-center">
+            <h1 class="text-4xl font-bold mb-8 text-indigo-400">Higher or Lower</h1>
+            <p class="text-gray-300 mb-8">Choose a game mode to get started.</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <button onclick="showSection('traditional-game')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-6 rounded-lg transition-transform duration-200 transform hover:scale-105">
+                    Traditional Game
+                </button>
+                <button onclick="showSection('battle-mode')" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 px-6 rounded-lg transition-transform duration-200 transform hover:scale-105">
+                    Battle Mode
+                </button>
+                <button onclick="showSection('board-game')" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-4 px-6 rounded-lg transition-transform duration-200 transform hover:scale-105">
+                    Board Game
+                </button>
+                <button onclick="showSection('scores')" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-4 px-6 rounded-lg transition-transform duration-200 transform hover:scale-105 col-span-1 md:col-span-2 lg:col-span-3">
+                    View Scores
+                </button>
+            </div>
+        </div>
+
+        <!-- Traditional Game -->
+        <div id="traditional-game" class="container">
+            <h2 class="text-3xl font-bold mb-6 text-center">Traditional Game</h2>
+            <div id="traditional-setup">
+                <div class="space-y-4 mb-6">
+                    <div>
+                        <label class="block text-gray-400 mb-1">Number of Players (1-6)</label>
+                        <input type="number" id="traditional-players" min="1" max="6" value="2" class="w-full bg-gray-700 text-white p-3 rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-gray-400 mb-1">Rounds per Set</label>
+                        <input type="number" id="traditional-rounds" min="1" value="10" class="w-full bg-gray-700 text-white p-3 rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-gray-400 mb-1">Number of Sets</label>
+                        <input type="number" id="traditional-sets" min="1" value="1" class="w-full bg-gray-700 text-white p-3 rounded-lg">
+                    </div>
+                </div>
+                <div id="traditional-player-inputs" class="space-y-4 mb-6"></div>
+                <button onclick="startTraditionalGame()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg">Start Game</button>
+            </div>
+            <div id="traditional-gameplay" class="hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <button onclick="backToMenu()" class="text-gray-400 hover:text-white transition-colors duration-200"><i class="fas fa-arrow-left"></i> Back</button>
+                    <div class="text-center">
+                        <p class="text-gray-400">Current Number</p>
+                        <p id="traditional-current-number" class="text-5xl font-bold text-indigo-400">--</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-gray-400">Round</p>
+                        <p id="traditional-round" class="text-2xl font-bold">1</p>
+                        <p class="text-gray-400">Set</p>
+                        <p id="traditional-set" class="text-2xl font-bold">1</p>
+                    </div>
+                </div>
+                <div id="traditional-guesses" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6"></div>
+                <div class="text-center">
+                    <button onclick="callNextNumber()" id="call-next-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg mb-4">Call Next Number</button>
+                    <button onclick="useHint()" id="hint-btn" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 px-6 rounded-lg mb-4 ml-4 relative has-tooltip">
+                        Get Hint
+                        <span id="hint-tooltip" class="tooltip"></span>
+                    </button>
+                </div>
+                <div id="traditional-number-grid" class="grid grid-cols-10 gap-2 text-sm text-center bg-gray-700 p-4 rounded-lg"></div>
+            </div>
+        </div>
+
+        <!-- Battle Mode -->
+        <div id="battle-mode" class="container">
+            <h2 class="text-3xl font-bold mb-6 text-center">Battle Mode</h2>
+            <div id="battle-setup">
+                <div class="space-y-4 mb-6">
+                    <div>
+                        <label class="block text-gray-400 mb-1">Number of Players (2-6)</label>
+                        <input type="number" id="battle-players" min="2" max="6" value="2" class="w-full bg-gray-700 text-white p-3 rounded-lg">
+                    </div>
+                </div>
+                <div id="battle-player-inputs" class="space-y-4 mb-6"></div>
+                <button onclick="startBattleMode()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg">Start Game</button>
+            </div>
+            <div id="battle-gameplay" class="hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <button onclick="backToMenu()" class="text-gray-400 hover:text-white transition-colors duration-200"><i class="fas fa-arrow-left"></i> Back</button>
+                    <div class="text-center">
+                        <p class="text-gray-400">Current Number</p>
+                        <p id="battle-current-number" class="text-5xl font-bold text-purple-400">--</p>
+                    </div>
+                </div>
+                <div id="battle-guesses" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6"></div>
+                <div class="text-center">
+                    <button onclick="callNextBattleNumber()" id="call-next-battle-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg mb-4">Call Next Number</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Board Game Mode -->
+        <div id="board-game" class="container">
+            <h2 class="text-3xl font-bold mb-6 text-center">Board Game</h2>
+            <div id="board-setup">
+                <div class="space-y-4 mb-6">
+                    <div>
+                        <label class="block text-gray-400 mb-1">Number of Players (1-6)</label>
+                        <input type="number" id="board-players" min="1" max="6" value="2" class="w-full bg-gray-700 text-white p-3 rounded-lg">
+                    </div>
+                </div>
+                <div id="board-player-inputs" class="space-y-4 mb-6"></div>
+                <div class="flex space-x-4">
+                    <button onclick="startBoardGame()" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg">Start Game</button>
+                    <button onclick="showSection('board-rules')" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-lg transition-transform duration-200 transform hover:scale-105">Rules</button>
+                </div>
+            </div>
+            <div id="board-gameplay" class="hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <button onclick="backToMenu()" class="text-gray-400 hover:text-white transition-colors duration-200"><i class="fas fa-arrow-left"></i> Back</button>
+                    <div class="text-center">
+                        <p class="text-gray-400">Current Number</p>
+                        <p id="board-current-number" class="text-5xl font-bold text-teal-400">--</p>
+                    </div>
+                </div>
+                <div id="board-guesses" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6"></div>
+                <div class="text-center">
+                    <button onclick="callNextBoardNumber()" id="call-next-board-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg mb-4">Call Next Number</button>
+                </div>
+                <div id="board-grid" class="grid grid-cols-10 gap-2 text-sm text-center p-4 bg-gray-700 rounded-lg"></div>
+            </div>
+        </div>
+
+        <!-- Board Game Rules -->
+        <div id="board-rules" class="container">
+            <h2 class="text-3xl font-bold mb-6 text-center">Board Game Rules</h2>
+            <button onclick="showSection('board-game')" class="mb-6 text-gray-400 hover:text-white transition-colors duration-200"><i class="fas fa-arrow-left"></i> Back</button>
+            <div class="bg-gray-700 p-6 rounded-lg space-y-4 text-gray-300">
+                <p>Welcome to the Higher or Lower Board Game! The goal is to be the first player to reach the end of the board.</p>
+                <p><strong>Setup:</strong></p>
+                <ul class="list-disc list-inside ml-4">
+                    <li>Choose your players and start the game.</li>
+                    <li>The game will call a random number between 1 and 75.</li>
+                </ul>
+                <p><strong>Gameplay:</strong></p>
+                <ul class="list-disc list-inside ml-4">
+                    <li>Each player guesses if the next number called will be higher or lower than the current number.</li>
+                    <li>A new number is called.</li>
+                    <li>If you guess correctly, you move forward 5 spaces.</li>
+                    <li>If you guess incorrectly, you do not move.</li>
+                    <li>Watch out for special spots on the board that can either help you or send you back!</li>
+                </ul>
+                <p><strong>Winning:</strong></p>
+                <p>The first player to reach or pass the final space on the board wins the game!</p>
+            </div>
+        </div>
+
+        <!-- Scores -->
+        <div id="scores" class="container">
+            <h2 class="text-3xl font-bold mb-6 text-center">Scores</h2>
+            <button onclick="backToMenu()" class="mb-6 text-gray-400 hover:text-white transition-colors duration-200"><i class="fas fa-arrow-left"></i> Back</button>
+            <div id="scores-list" class="space-y-4"></div>
+            <button onclick="resetScores()" class="mt-8 w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-lg">Reset Scores</button>
+        </div>
+
+        <!-- Message Box -->
+        <div id="message-box" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center hidden z-50">
+            <div class="bg-gray-800 rounded-lg p-6 shadow-xl text-center">
+                <p id="message-text" class="text-white text-lg font-semibold mb-4"></p>
+                <button onclick="hideMessage()" class="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-lg">OK</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- Global Game State and Utilities ---
+        let gameState = {
+            currentMode: 'main-menu',
+            players: [],
+            currentNumber: null,
+            numbersDrawn: new Set(),
+            round: 1,
+            set: 1,
+            scores: {}, // Local scores, tied to game modes
+            playerGuesses: {},
+            battleNumbers: {},
+            playerTokens: {},
+            board: [],
+            hintCooldown: 0 // New state for hint cooldown
+        };
+        const MAX_PLAYERS = 6;
+        const NUMBER_RANGE_TRADITIONAL = 75;
+        const NUMBER_RANGE_BATTLE = 50;
+        const BOARD_SIZE = 50;
+
+        function showSection(id) {
+            document.querySelectorAll('.container').forEach(el => el.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            if (id === 'scores') {
+                displayScores();
+            }
+        }
+
+        function showMessage(text) {
+            document.getElementById('message-text').innerText = text;
+            document.getElementById('message-box').classList.remove('hidden');
+        }
+
+        function hideMessage() {
+            document.getElementById('message-box').classList.add('hidden');
+        }
+
+        function backToMenu() {
+            showSection('main-menu');
+            // Reset game state for cleanup
+            gameState.players = [];
+            gameState.currentNumber = null;
+            gameState.numbersDrawn = new Set();
+            gameState.playerGuesses = {};
+            gameState.hintCooldown = 0;
+            document.getElementById('traditional-gameplay').classList.add('hidden');
+            document.getElementById('battle-gameplay').classList.add('hidden');
+            document.getElementById('board-gameplay').classList.add('hidden');
+            document.getElementById('traditional-setup').classList.remove('hidden');
+            document.getElementById('battle-setup').classList.remove('hidden');
+            document.getElementById('board-setup').classList.remove('hidden');
+        }
+
+        // --- Core Game Logic ---
+
+        function setupPlayerInputs(mode, maxPlayers, containerId) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            const numPlayers = parseInt(document.getElementById(`${mode}-players`).value);
+            for (let i = 0; i < numPlayers; i++) {
+                const playerInput = document.createElement('div');
+                playerInput.className = 'flex items-center space-x-2';
+                playerInput.innerHTML = `
+                    <label class="text-gray-400">Player ${i + 1}:</label>
+                    <input type="text" value="Player ${i + 1}" id="${mode}-player-name-${i}" class="flex-grow bg-gray-700 text-white p-2 rounded-lg">
+                `;
+                container.appendChild(playerInput);
+            }
+        }
+
+        document.getElementById('traditional-players').addEventListener('input', () => setupPlayerInputs('traditional', MAX_PLAYERS, 'traditional-player-inputs'));
+        document.getElementById('battle-players').addEventListener('input', () => setupPlayerInputs('battle', MAX_PLAYERS, 'battle-player-inputs'));
+        document.getElementById('board-players').addEventListener('input', () => setupPlayerInputs('board', MAX_PLAYERS, 'board-player-inputs'));
+
+        window.onload = () => {
+            setupPlayerInputs('traditional', MAX_PLAYERS, 'traditional-player-inputs');
+            setupPlayerInputs('battle', MAX_PLAYERS, 'battle-player-inputs');
+            setupPlayerInputs('board', MAX_PLAYERS, 'board-player-inputs');
+        };
+
+        function initializeGame(mode, numberRange) {
+            gameState.currentMode = mode;
+            gameState.players = [];
+            gameState.playerScores = {};
+            gameState.numbersDrawn = new Set();
+            gameState.playerGuesses = {};
+
+            const numPlayers = parseInt(document.getElementById(`${mode}-players`).value);
+            for (let i = 0; i < numPlayers; i++) {
+                const name = document.getElementById(`${mode}-player-name-${i}`).value || `Player ${i + 1}`;
+                gameState.players.push({ name, score: 0 });
+            }
+
+            // Draw the first number
+            const allNumbers = Array.from({ length: numberRange }, (_, i) => i + 1);
+            const firstNumber = allNumbers[Math.floor(Math.random() * allNumbers.length)];
+            gameState.currentNumber = firstNumber;
+            gameState.numbersDrawn.add(firstNumber);
+        }
+
+        function drawNextNumber(numberRange) {
+            const availableNumbers = Array.from({ length: numberRange }, (_, i) => i + 1).filter(n => !gameState.numbersDrawn.has(n));
+            if (availableNumbers.length === 0) {
+                return null; // No more numbers to draw
+            }
+            const nextNumber = availableNumbers[Math.floor(Math.random() * availableNumbers.length)];
+            gameState.numbersDrawn.add(nextNumber);
+            return nextNumber;
+        }
+
+        function updateTraditionalDisplay() {
+            document.getElementById('traditional-current-number').innerText = gameState.currentNumber;
+            document.getElementById('traditional-round').innerText = gameState.round;
+            document.getElementById('traditional-set').innerText = gameState.set;
+
+            const guessesDiv = document.getElementById('traditional-guesses');
+            guessesDiv.innerHTML = '';
+            gameState.players.forEach((player, index) => {
+                const guessHtml = `
+                    <div class="bg-gray-700 p-4 rounded-lg shadow-inner">
+                        <h3 class="font-semibold text-lg mb-2">${player.name} <span class="text-green-400">(${player.score} pts)</span></h3>
+                        <div class="flex space-x-2">
+                            <button onclick="makeGuess('higher', ${index})" class="flex-1 bg-gray-600 hover:bg-gray-500 py-2 rounded-lg transition-colors">Higher</button>
+                            <button onclick="makeGuess('lower', ${index})" class="flex-1 bg-gray-600 hover:bg-gray-500 py-2 rounded-lg transition-colors">Lower</button>
+                        </div>
+                    </div>
+                `;
+                guessesDiv.innerHTML += guessHtml;
+            });
+
+            const hintBtn = document.getElementById('hint-btn');
+            const hintTooltip = document.getElementById('hint-tooltip');
+            if (gameState.hintCooldown > 0) {
+                hintBtn.disabled = true;
+                hintBtn.classList.remove('bg-yellow-500', 'hover:bg-yellow-600');
+                hintBtn.classList.add('bg-gray-500');
+                hintTooltip.innerText = `Ready in ${gameState.hintCooldown} rounds`;
+            } else {
+                hintBtn.disabled = false;
+                hintBtn.classList.remove('bg-gray-500');
+                hintBtn.classList.add('bg-yellow-500', 'hover:bg-yellow-600');
+                hintTooltip.innerText = `Get a statistical hint`;
+            }
+        }
+
+        window.makeGuess = function(guess, playerIndex) {
+            gameState.playerGuesses[playerIndex] = guess;
+            const guessBtn = document.querySelector(`#traditional-guesses > div:nth-child(${playerIndex + 1}) > .flex > button:nth-child(${guess === 'higher' ? 1 : 2})`);
+            guessBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-600');
+        }
+
+        window.useHint = function() {
+            if (gameState.hintCooldown > 0) {
+                showMessage(`The hint is on cooldown. You can use it again in ${gameState.hintCooldown} rounds.`);
+                return;
+            }
+
+            const availableNumbers = Array.from({ length: NUMBER_RANGE_TRADITIONAL }, (_, i) => i + 1).filter(n => !gameState.numbersDrawn.has(n));
+            const higherCount = availableNumbers.filter(n => n > gameState.currentNumber).length;
+            const lowerCount = availableNumbers.filter(n => n < gameState.currentNumber).length;
+            const totalRemaining = availableNumbers.length;
+
+            const higherProb = ((higherCount / totalRemaining) * 100).toFixed(1);
+            const lowerProb = ((lowerCount / totalRemaining) * 100).toFixed(1);
+
+            let recommendation = higherCount > lowerCount ? 'Higher' : 'Lower';
+            if (higherCount === lowerCount) {
+                recommendation = 'Either, it is a tie!';
+            }
+
+            showMessage(`There are ${higherCount} numbers remaining that are higher and ${lowerCount} that are lower.
+The probability of the next number being higher is ${higherProb}%, and lower is ${lowerProb}%.
+I recommend guessing: ${recommendation}`);
+
+            gameState.hintCooldown = 3;
+            updateTraditionalDisplay();
+        }
+
+        function checkTraditionalGuesses(nextNumber) {
+            const result = nextNumber > gameState.currentNumber ? 'higher' : 'lower';
+            let winner = null;
+            let maxScore = -1;
+
+            gameState.players.forEach((player, index) => {
+                if (gameState.playerGuesses[index] === result) {
+                    player.score++;
+                    if (player.score > maxScore) {
+                        maxScore = player.score;
+                        winner = player.name;
+                    }
+                }
+            });
+
+            let message = `The next number was ${nextNumber}. It was ${result}!`;
+            if (winner) {
+                message += `\nCorrect guessers got a point! The current leader is ${winner}.`;
+            }
+            showMessage(message);
+
+            gameState.playerGuesses = {}; // Reset guesses for the next round
+            updateTraditionalDisplay();
+        }
+
+        // --- Traditional Game Mode ---
+        function startTraditionalGame() {
+            const numPlayers = parseInt(document.getElementById('traditional-players').value);
+            if (numPlayers < 1 || numPlayers > 6) {
+                showMessage("Please select between 1 and 6 players.");
+                return;
+            }
+            document.getElementById('traditional-setup').classList.add('hidden');
+            document.getElementById('traditional-gameplay').classList.remove('hidden');
+            initializeGame('traditional', NUMBER_RANGE_TRADITIONAL);
+            gameState.roundsPerSet = parseInt(document.getElementById('traditional-rounds').value);
+            gameState.sets = parseInt(document.getElementById('traditional-sets').value);
+            createNumberGrid(NUMBER_RANGE_TRADITIONAL);
+            updateTraditionalDisplay();
+        }
+
+        function callNextNumber() {
+            const nextNumber = drawNextNumber(NUMBER_RANGE_TRADITIONAL);
+            if (!nextNumber) {
+                showMessage("No more numbers to draw. This game is over!");
+                return;
+            }
+
+            checkTraditionalGuesses(nextNumber);
+            
+            gameState.currentNumber = nextNumber;
+            updateNumberGrid(nextNumber);
+
+            gameState.round++;
+            if (gameState.hintCooldown > 0) {
+                gameState.hintCooldown--;
+            }
+
+            if (gameState.round > gameState.roundsPerSet) {
+                endSet();
+            } else {
+                updateTraditionalDisplay();
+            }
+        }
+
+        function createNumberGrid(range) {
+            const grid = document.getElementById('traditional-number-grid');
+            grid.innerHTML = '';
+            for (let i = 1; i <= range; i++) {
+                const item = document.createElement('div');
+                item.className = 'number-grid-item bg-gray-600 text-white p-2 rounded-lg';
+                item.id = `number-item-${i}`;
+                item.innerText = i;
+                grid.appendChild(item);
+            }
+        }
+
+        function updateNumberGrid(drawnNumber) {
+            const item = document.getElementById(`number-item-${drawnNumber}`);
+            if (item) {
+                item.classList.add('bingo-item-drawn');
+            }
+        }
+
+        function endSet() {
+            gameState.set++;
+            if (gameState.set > gameState.sets) {
+                endGame('traditional');
+            } else {
+                showMessage(`Set ${gameState.set - 1} is over. Starting Set ${gameState.set}!`);
+                gameState.round = 1;
+                gameState.numbersDrawn = new Set();
+                const allNumbers = Array.from({ length: NUMBER_RANGE_TRADITIONAL }, (_, i) => i + 1);
+                const nextNumber = allNumbers[Math.floor(Math.random() * allNumbers.length)];
+                gameState.currentNumber = nextNumber;
+                gameState.numbersDrawn.add(nextNumber);
+                createNumberGrid(NUMBER_RANGE_TRADITIONAL);
+                updateTraditionalDisplay();
+            }
+        }
+
+        function endGame(mode) {
+            let winner = gameState.players.reduce((prev, current) => (prev.score > current.score) ? prev : current);
+            let message = `Game over! The winner is ${winner.name} with ${winner.score} points!`;
+            showMessage(message);
+            updateTotalWins(winner.name, mode);
+            backToMenu();
+        }
+
+        // --- Battle Mode ---
+        function startBattleMode() {
+            const numPlayers = parseInt(document.getElementById('battle-players').value);
+            if (numPlayers < 2 || numPlayers > 6) {
+                showMessage("Please select between 2 and 6 players for Battle Mode.");
+                return;
+            }
+            document.getElementById('battle-setup').classList.add('hidden');
+            document.getElementById('battle-gameplay').classList.remove('hidden');
+
+            initializeGame('battle', NUMBER_RANGE_BATTLE);
+            gameState.battleNumbers = {};
+            gameState.currentPlayerIndex = 0;
+            
+            // Player number selection
+            let playerSetupHtml = '';
+            gameState.players.forEach((player, index) => {
+                playerSetupHtml += `
+                    <div class="bg-gray-700 p-4 rounded-lg mb-4">
+                        <h3 class="font-bold text-lg mb-2">${player.name}, pick 7 numbers (1-50):</h3>
+                        <div id="battle-player-numbers-${index}" class="grid grid-cols-5 gap-2 text-center text-sm"></div>
+                    </div>
+                `;
+            });
+            document.getElementById('battle-gameplay').innerHTML = playerSetupHtml;
+            
+            // Number selection UI
+            const allNumbers = Array.from({ length: NUMBER_RANGE_BATTLE }, (_, i) => i + 1);
+            gameState.players.forEach((player, index) => {
+                const grid = document.getElementById(`battle-player-numbers-${index}`);
+                allNumbers.forEach(num => {
+                    const btn = document.createElement('button');
+                    btn.className = 'bg-gray-600 text-white p-2 rounded-lg hover:bg-gray-500';
+                    btn.innerText = num;
+                    btn.onclick = () => selectBattleNumber(index, num, btn);
+                    grid.appendChild(btn);
+                });
+            });
+
+            // Start button
+            const startBtn = document.createElement('button');
+            startBtn.onclick = checkBattleSelections;
+            startBtn.className = 'w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg';
+            startBtn.innerText = 'Confirm Selections & Start Battle';
+            document.getElementById('battle-gameplay').appendChild(startBtn);
+
+            // Back button
+            const backBtn = document.createElement('button');
+            backBtn.onclick = backToMenu;
+            backBtn.className = 'absolute top-4 left-4 text-gray-400 hover:text-white';
+            backBtn.innerHTML = '<i class="fas fa-arrow-left"></i> Back';
+            document.getElementById('battle-gameplay').appendChild(backBtn);
+        }
+
+        function selectBattleNumber(playerIndex, number, button) {
+            if (!gameState.battleNumbers[playerIndex]) {
+                gameState.battleNumbers[playerIndex] = [];
+            }
+            if (gameState.battleNumbers[playerIndex].includes(number)) {
+                gameState.battleNumbers[playerIndex] = gameState.battleNumbers[playerIndex].filter(n => n !== number);
+                button.classList.remove('bg-purple-400');
+            } else if (gameState.battleNumbers[playerIndex].length < 7) {
+                gameState.battleNumbers[playerIndex].push(number);
+                button.classList.add('bg-purple-400');
+            }
+        }
+
+        function checkBattleSelections() {
+            let allPlayersReady = true;
+            gameState.players.forEach((player, index) => {
+                if (!gameState.battleNumbers[index] || gameState.battleNumbers[index].length !== 7) {
+                    allPlayersReady = false;
+                }
+            });
+
+            if (!allPlayersReady) {
+                showMessage("Each player must select exactly 7 numbers.");
+                return;
+            }
+
+            // Start the actual game play
+            document.getElementById('battle-gameplay').innerHTML = `
+                <div class="flex justify-between items-center mb-6">
+                    <button onclick="backToMenu()" class="text-gray-400 hover:text-white transition-colors duration-200"><i class="fas fa-arrow-left"></i> Back</button>
+                    <div class="text-center">
+                        <p class="text-gray-400">Current Number</p>
+                        <p id="battle-current-number" class="text-5xl font-bold text-purple-400">--</p>
+                    </div>
+                </div>
+                <div id="battle-guesses" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6"></div>
+                <div class="text-center">
+                    <button onclick="callNextBattleNumber()" id="call-next-battle-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg mb-4">Call Next Number</button>
+                </div>
+            `;
+            
+            // Start the game with the first number from the first player
+            gameState.currentPlayerIndex = 0;
+            gameState.currentNumberIndex = 0;
+            gameState.currentNumber = gameState.battleNumbers[gameState.currentPlayerIndex][gameState.currentNumberIndex];
+            updateBattleDisplay();
+        }
+        
+        function updateBattleDisplay() {
+            document.getElementById('battle-current-number').innerText = gameState.currentNumber;
+            const guessesDiv = document.getElementById('battle-guesses');
+            guessesDiv.innerHTML = '';
+            gameState.players.forEach((player, index) => {
+                if (index !== gameState.currentPlayerIndex) {
+                    const guessHtml = `
+                        <div class="bg-gray-700 p-4 rounded-lg shadow-inner">
+                            <h3 class="font-semibold text-lg mb-2">${player.name} <span class="text-green-400">(${player.score} pts)</span></h3>
+                            <div class="flex space-x-2">
+                                <button onclick="makeBattleGuess('higher', ${index})" class="flex-1 bg-gray-600 hover:bg-gray-500 py-2 rounded-lg transition-colors">Higher</button>
+                                <button onclick="makeBattleGuess('lower', ${index})" class="flex-1 bg-gray-600 hover:bg-gray-500 py-2 rounded-lg transition-colors">Lower</button>
+                            </div>
+                        </div>
+                    `;
+                    guessesDiv.innerHTML += guessHtml;
+                }
+            });
+        }
+        
+        window.makeBattleGuess = function(guess, playerIndex) {
+            gameState.playerGuesses[playerIndex] = guess;
+            const guessBtn = document.querySelector(`#battle-guesses > div > .flex > button:nth-child(${guess === 'higher' ? 1 : 2})`);
+            if (guessBtn) guessBtn.classList.add('bg-purple-600', 'hover:bg-purple-600');
+        }
+
+        function callNextBattleNumber() {
+            // Get the next number from the current player's chosen list
+            const nextNumber = gameState.battleNumbers[gameState.currentPlayerIndex][gameState.currentNumberIndex + 1];
+
+            if (!nextNumber) {
+                // Current player's turn is over, move to next player
+                gameState.currentNumberIndex = -1;
+                gameState.currentPlayerIndex++;
+                if (gameState.currentPlayerIndex >= gameState.players.length) {
+                    // All players have had a turn
+                    endGame('battle');
+                    return;
+                }
+                showMessage(`${gameState.players[gameState.currentPlayerIndex].name}'s turn to pick numbers!`);
+                
+                // Set the current number to the first number of the next player's list
+                gameState.currentNumber = gameState.battleNumbers[gameState.currentPlayerIndex][0];
+                gameState.currentNumberIndex = 0;
+                updateBattleDisplay();
+                return;
+            }
+
+            // Check guesses against the next number
+            const result = nextNumber > gameState.currentNumber ? 'higher' : 'lower';
+            let message = `The next number was ${nextNumber}. It was ${result}!`;
+            let correctGuessers = [];
+
+            gameState.players.forEach((player, index) => {
+                if (index !== gameState.currentPlayerIndex && gameState.playerGuesses[index] === result) {
+                    player.score++;
+                    correctGuessers.push(player.name);
+                }
+            });
+
+            if (correctGuessers.length > 0) {
+                message += `\nCorrect guessers: ${correctGuessers.join(', ')}!`;
+            }
+            showMessage(message);
+
+            gameState.currentNumber = nextNumber;
+            gameState.currentNumberIndex++;
+            gameState.playerGuesses = {};
+            updateBattleDisplay();
+        }
+
+
+        // --- Board Game Mode ---
+        function startBoardGame() {
+            const numPlayers = parseInt(document.getElementById('board-players').value);
+            if (numPlayers < 1 || numPlayers > 6) {
+                showMessage("Please select between 1 and 6 players.");
+                return;
+            }
+            document.getElementById('board-setup').classList.add('hidden');
+            document.getElementById('board-gameplay').classList.remove('hidden');
+            initializeGame('board', NUMBER_RANGE_TRADITIONAL);
+            createBoard();
+            setupPlayerTokens();
+            updateBoardDisplay();
+        }
+
+        function createBoard() {
+            gameState.board = [];
+            const specialSpots = {
+                2: { effect: 'forward', spaces: 5, label: 'Fast Start! Move 5 spaces forward!' },
+                5: { effect: 'forward', spaces: 3, label: 'Shortcut! Move 3 spaces forward!' },
+                8: { effect: 'backward', spaces: 2, label: 'Oops, move back 2 spaces!' },
+                11: { effect: 'forward', spaces: 4, label: 'Lucky guess! Move 4 spaces forward!' },
+                15: { effect: 'backward', spaces: 5, label: 'Penalty! Move back 5 spaces!' },
+                18: { effect: 'forward', spaces: 2, label: 'Quick hop! Move 2 spaces forward!' },
+                22: { effect: 'forward', spaces: 6, label: 'Super boost! Move 6 spaces forward!' },
+                25: { effect: 'backward', spaces: 3, label: 'Lost your way, move back 3!' },
+                28: { effect: 'forward', spaces: 3, label: 'Found a bonus! Move 3 spaces forward!' },
+                32: { effect: 'backward', spaces: 7, label: 'Big setback! Move back 7 spaces!' },
+                37: { effect: 'forward', spaces: 5, label: 'Speed up! Move 5 spaces forward!' },
+                40: { effect: 'backward', spaces: 4, label: 'Uh oh, move back 4 spaces.' },
+                44: { effect: 'forward', spaces: 3, label: 'Close to the end, move 3 spaces forward!' },
+                48: { effect: 'backward', spaces: 2, label: 'Almost there! Move back 2 spaces!' }
+            };
+
+            for (let i = 1; i <= BOARD_SIZE; i++) {
+                gameState.board.push({
+                    number: i,
+                    special: specialSpots[i] || null
+                });
+            }
+            updateBoardDisplay();
+        }
+
+        function setupPlayerTokens() {
+            gameState.playerTokens = {};
+            gameState.players.forEach(player => {
+                gameState.playerTokens[player.name] = 0;
+            });
+        }
+
+        function updateBoardDisplay() {
+            const boardGrid = document.getElementById('board-grid');
+            boardGrid.innerHTML = '';
+            
+            gameState.board.forEach(spot => {
+                const item = document.createElement('div');
+                item.className = 'w-10 h-10 md:w-12 md:h-12 flex items-center justify-center p-1 rounded-lg relative transition-transform duration-300';
+                
+                let bgColor = 'bg-gray-600';
+                let effectLabel = '';
+                if (spot.special) {
+                    if (spot.special.effect === 'forward') {
+                        bgColor = 'bg-green-600';
+                        effectLabel = `+${spot.special.spaces}`;
+                    } else if (spot.special.effect === 'backward') {
+                        bgColor = 'bg-red-600';
+                        effectLabel = `-${spot.special.spaces}`;
+                    }
+                }
+                item.classList.add(bgColor);
+                
+                item.innerHTML = `
+                    <div class="absolute inset-0 flex items-center justify-center text-sm font-bold text-white">${spot.number}</div>
+                    ${effectLabel ? `<div class="absolute bottom-1 right-1 text-xs font-bold text-white">${effectLabel}</div>` : ''}
+                `;
+                
+                // Add tokens to the board
+                gameState.players.forEach(player => {
+                    if (gameState.playerTokens[player.name] + 1 === spot.number) {
+                        const token = document.createElement('div');
+                        token.className = 'w-4 h-4 rounded-full absolute -bottom-1 -left-1 border-2 border-white';
+                        // A simple way to get a unique color for each player's token
+                        const colors = ['bg-yellow-400', 'bg-blue-400', 'bg-red-400', 'bg-pink-400', 'bg-orange-400', 'bg-cyan-400'];
+                        token.classList.add(colors[gameState.players.indexOf(player)]);
+                        item.appendChild(token);
+                    }
+                });
+
+                boardGrid.appendChild(item);
+            });
+            
+            // Update current number display
+            document.getElementById('board-current-number').innerText = gameState.currentNumber;
+        }
+
+
+        function callNextBoardNumber() {
+            const nextNumber = drawNextNumber(NUMBER_RANGE_TRADITIONAL);
+            if (!nextNumber) {
+                showMessage("No more numbers to draw. This game is over!");
+                return;
+            }
+
+            const result = nextNumber > gameState.currentNumber ? 'higher' : 'lower';
+            let message = `The next number was ${nextNumber}. It was ${result}!`;
+            
+            let correctGuessers = [];
+
+            // Move tokens based on correct guess
+            gameState.players.forEach(player => {
+                const playerGuess = gameState.playerGuesses[player.name];
+                if (playerGuess === result) {
+                    const moveSpaces = 5;
+                    gameState.playerTokens[player.name] += moveSpaces;
+                    correctGuessers.push(player.name);
+
+                    // Check for special spots and apply effects
+                    if (gameState.playerTokens[player.name] > 0 && gameState.playerTokens[player.name] <= BOARD_SIZE) {
+                        const spot = gameState.board[gameState.playerTokens[player.name] - 1];
+                        if (spot.special) {
+                            if (spot.special.effect === 'forward') {
+                                gameState.playerTokens[player.name] += spot.special.spaces;
+                                showMessage(`${player.name} landed on a positive spot and moved forward ${spot.special.spaces} spaces!`);
+                            } else if (spot.special.effect === 'backward') {
+                                gameState.playerTokens[player.name] -= spot.special.spaces;
+                                showMessage(`${player.name} landed on a negative spot and moved back ${spot.special.spaces} spaces!`);
+                            }
+                        }
+                    }
+
+                    // Check for game winner
+                    if (gameState.playerTokens[player.name] >= BOARD_SIZE) {
+                        showMessage(`${player.name} won the board game!`);
+                        updateTotalWins(player.name, 'board');
+                        setTimeout(backToMenu, 3000);
+                        return; // Exit the function to prevent further updates
+                    }
+                }
+            });
+
+            if (correctGuessers.length > 0) {
+                message += `\nCorrect guessers moved 5 spaces!`;
+            }
+            showMessage(message);
+            
+            // Reset for next round
+            gameState.currentNumber = nextNumber;
+            gameState.playerGuesses = {};
+            updateBoardDisplay();
+        }
+
+        // --- Scores and Local Storage ---
+
+        function loadScores() {
+            try {
+                const scores = JSON.parse(localStorage.getItem('gameScores')) || {};
+                return scores;
+            } catch (e) {
+                console.error("Failed to load scores from local storage.", e);
+                return {};
+            }
+        }
+
+        function saveScores(scores) {
+            try {
+                localStorage.setItem('gameScores', JSON.stringify(scores));
+            } catch (e) {
+                console.error("Failed to save scores to local storage.", e);
+            }
+        }
+
+        function updateTotalWins(playerName, mode) {
+            const scores = loadScores();
+            if (!scores[playerName]) {
+                scores[playerName] = { totalWins: 0, modeWins: {} };
+            }
+            scores[playerName].totalWins = (scores[playerName].totalWins || 0) + 1;
+            scores[playerName].modeWins[mode] = (scores[playerName].modeWins[mode] || 0) + 1;
+            saveScores(scores);
+        }
+
+        function displayScores() {
+            const scores = loadScores();
+            const scoresList = document.getElementById('scores-list');
+            scoresList.innerHTML = '';
+            
+            const sortedPlayers = Object.keys(scores).sort((a, b) => scores[b].totalWins - scores[a].totalWins);
+
+            if (sortedPlayers.length === 0) {
+                scoresList.innerHTML = '<p class="text-center text-gray-400">No scores recorded yet. Play a game to see your stats!</p>';
+                return;
+            }
+
+            sortedPlayers.forEach(name => {
+                const wins = scores[name].totalWins;
+                const modeWins = scores[name].modeWins;
+                
+                let modeWinsText = '';
+                for (const mode in modeWins) {
+                    modeWinsText += `${mode.charAt(0).toUpperCase() + mode.slice(1)}: ${modeWins[mode]} wins, `;
+                }
+                modeWinsText = modeWinsText.slice(0, -2); // Remove the last comma and space
+                
+                scoresList.innerHTML += `
+                    <div class="bg-gray-700 p-4 rounded-lg flex justify-between items-center shadow-md">
+                        <div>
+                            <p class="font-bold text-xl text-green-400">${name}</p>
+                            <p class="text-gray-400 text-sm">${modeWinsText}</p>
+                        </div>
+                        <span class="text-2xl font-extrabold">${wins} Wins</span>
+                    </div>
+                `;
+            });
+        }
+
+        function resetScores() {
+            localStorage.removeItem('gameScores');
+            displayScores();
+            showMessage("All scores have been reset.");
+        }
+    </script>
+</body>
+</html>
